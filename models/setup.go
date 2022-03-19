@@ -18,4 +18,6 @@ func ConnectDatabase() {
 	}
 
 	DB.AutoMigrate(&Treasury{})
+	DB.AutoMigrate(&AccountingUnit{})
+	DB.AutoMigrate(&Entity{})
 }

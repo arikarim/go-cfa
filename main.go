@@ -26,5 +26,18 @@ func main() {
 	// update a treasury
 	r.PUT("/treasuries/:id", controllers.UpdateTreasury)
 
+	// get all accounting_units
+	r.GET("/accounting_units", controllers.GetAccountingUnits)
+	// create a new accounting_unit
+	r.POST("/accounting_units", controllers.CreateAccountingUnit)
+	// update a accounting_unit
+	r.PUT("/accounting_units/:id", controllers.UpdateAccountingUnit)
+
+	// get all entities
+	r.GET("/entities", controllers.GetEntities)
+	// create a new entity
+	r.POST("/entities", controllers.CreateEntity)
+	// update a entity
+	r.PUT("/entities/:id", controllers.UpdateEntity)
 	r.Run()
 }

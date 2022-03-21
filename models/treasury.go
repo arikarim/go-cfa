@@ -2,17 +2,16 @@ package models
 
 // type Status int
 
-// // create status enum
-// const (
-// 	Active Status = iota
-// 	Inactive
-// )
+import (
+	"github.com/jinzhu/gorm"
+)
 
 // Treasury struct
 type Treasury struct {
-	Id     uint `json:"id" gorm:"primary_key"`
 	NameEn string `json:"name_en" binding:"required"`
 	Status string `json:"status" binding:"required" gorm:"default:'active'"`
+	gorm.Model
+	AccountingUnits []AccountingUnit
 }
 
 // CreateTreasuryInput struct

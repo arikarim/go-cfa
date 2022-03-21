@@ -2,9 +2,12 @@ package controllers
 
 import (
 	"net/http"
-	"github.com/gin-gonic/gin"
-	"github.com/arikarim/go-cfa/models"
+
 	"github.com/arikarim/go-cfa/errors"
+	"github.com/arikarim/go-cfa/models"
+	"github.com/arikarim/go-cfa/serializers"
+	"github.com/gin-gonic/gin"
+	"gorm.io/gorm/clause"
 )
 
 // get all accounting_units
@@ -17,7 +20,33 @@ func GetAccountingUnits(c *gin.Context) {
 		return
 	}
 
-	c.JSON(200, accounting_units)
+	// Initialize seriaizer
+	serializer := serializers.AccountingUnitsSerializer{
+		C: c,
+		AccountingUnits: accounting_units,
+	}
+
+	c.JSON(http.StatusOK, serializer.Response())
+}
+
+// get a accounting_unit by id
+func GetAccountingUnit(c *gin.Context) {
+	var accounting_unit = models.AccountingUnit{}
+	// find accounting_unit by id
+	if err := models.DB.Preload("Treasury").Preload("Entity").Where("id = ?", c.Param("id")).First(&accounting_unit).Error; err != nil {
+		c.JSON(422, gin.H{
+			"message": err.Error(),
+		})
+		return
+	}
+
+	// Initialize seriaizer
+	serializer := serializers.AccountingUnitSerializer{
+		C: c,
+		AccountingUnit: accounting_unit,
+	}
+
+	c.JSON(http.StatusOK, serializer.Response())
 }
 
 // create a new accounting_unit
@@ -32,49 +61,58 @@ func CreateAccountingUnit(c *gin.Context) {
 
 	// create a new accounting_unit
 	accounting_unit := models.AccountingUnit{
-		NameEn: input.NameEn,
-		Status: input.Status,
+		NameEn:     input.NameEn,
+		Status:     input.Status,
 		TreasuryId: input.TreasuryId,
-		EntityId: input.EntityId,
+		EntityId:   input.EntityId,
 	}
 
 	// check if relations exists
-	relations := map[uint]interface{}{
-		accounting_unit.TreasuryId: &models.Treasury{},
-		accounting_unit.EntityId: &models.Entity{},
+	records := make(map[int]interface{})
+	if input.TreasuryId != 0 {
+		records[input.TreasuryId] = &models.Treasury{}
 	}
-	if structName := errors.RecordNotFound(relations); structName != "" {
+	if input.EntityId != 0 {
+		records[input.EntityId] = &models.Entity{}
+	}
+	if structName := errors.RecordNotFound(records); structName != "" {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"message": "relation " + structName + " not found",
 		})
 		return
 	}
 
-	// Start a transaction
-	tx := models.DB.Begin()
 	// create a new accounting_unit
-	if err := tx.Create(&accounting_unit).Error; err != nil {
-		tx.Rollback()
+	// preload relations
+	if err := models.DB.Create(&accounting_unit).Error; err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"message": err.Error(),
 		})
 		return
 	}
 
-	// commit transaction
-	tx.Commit()
+	// return created accounting_unit
+	if err := models.DB.Preload(clause.Associations).First(&accounting_unit).Error; err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"message": err.Error(),
+		})
+		return
+	}
 
-	c.JSON(200, gin.H{
-		"message": "success",
-		"data":    accounting_unit,
-	})
+	// Initialize seriaizer
+	serializer := serializers.AccountingUnitSerializer{
+		C: c,
+		AccountingUnit: accounting_unit,
+	}
+
+	c.JSON(http.StatusCreated, serializer.Response())
 }
 
 // update a accounting_unit
 func UpdateAccountingUnit(c *gin.Context) {
 	var accounting_unit = models.AccountingUnit{}
 	// find accounting_unit by id
-	if err := models.DB.Where("id = ?", c.Param("id")).First(&accounting_unit).Error; err != nil {
+	if err := models.DB.Preload(clause.Associations).Where("id = ?", c.Param("id")).First(&accounting_unit).Error; err != nil {
 		c.JSON(http.StatusNotFound, gin.H{
 			"message": err.Error(),
 		})
@@ -89,16 +127,54 @@ func UpdateAccountingUnit(c *gin.Context) {
 		return
 	}
 
+	// check if relations exists
+	records := make(map[int]interface{})
+	if input.TreasuryId != 0 {
+		records[input.TreasuryId] = &models.Treasury{}
+	}
+	if input.EntityId != 0 {
+		records[input.EntityId] = &models.Entity{}
+	}
+
+	if structName := errors.RecordNotFound(records); structName != "" {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"message": "relation " + structName + " not found",
+		})
+		return
+	}
+
 	// update a accounting_unit
 	models.DB.Model(&accounting_unit).Updates(models.AccountingUnit{
-		NameEn: input.NameEn,
-		Status: input.Status,
+		NameEn:     input.NameEn,
+		Status:     input.Status,
 		TreasuryId: input.TreasuryId,
-		EntityId: input.EntityId,
+		EntityId:   input.EntityId,
 	})
 
-	c.JSON(200, gin.H{
-		"message": "success",
-		"data":    accounting_unit,
-	})
+	// Initialize seriaizer
+	serializer := serializers.AccountingUnitSerializer{
+		C: c,
+		AccountingUnit: accounting_unit,
+	}
+
+	c.JSON(http.StatusOK, serializer.Response())
+}
+
+// get unpaginated list of accounting_units
+func GetUnpaginatedAccountingUnits(c *gin.Context) {
+	var accounting_units []models.AccountingUnit
+	if err := models.DB.Find(&accounting_units).Error; err != nil {
+		c.JSON(500, gin.H{
+			"message": err.Error(),
+		})
+		return
+	}
+
+	// Initialize seriaizer 
+	serializer := serializers.AccountingUnitsSerializer{
+		C: c,
+		AccountingUnits: accounting_units,
+	}
+
+	c.JSON(http.StatusOK, serializer.Response())
 }

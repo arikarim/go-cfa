@@ -15,29 +15,49 @@ func main() {
 	// root of the project
 	r.GET("/", func(c *gin.Context) {
 		c.JSON(200, gin.H{
-			"message": "Welcome to common financial management system",
+			"message": "Welcome to common financial accounting units management system",
 		})
 	})
 
-	// get all treasuries
-	r.GET("/treasuries", controllers.GetTreasuries)
-	// create a new treasury
-	r.POST("/treasuries", controllers.CreateTreasury)
-	// update a treasury
-	r.PUT("/treasuries/:id", controllers.UpdateTreasury)
+	// Treasury Group
+	treasuryGroup := r.Group("v1/treasuries")
+	{
+		// get all treasuries
+		treasuryGroup.GET("/", controllers.GetTreasuries)
+		// get a treasury by id
+		treasuryGroup.GET("/:id", controllers.GetTreasury)
+		// create a new treasury
+		treasuryGroup.POST("/", controllers.CreateTreasury)
+		// update a treasury
+		treasuryGroup.PUT("/:id", controllers.UpdateTreasury)
+	}
 
-	// get all accounting_units
-	r.GET("/accounting_units", controllers.GetAccountingUnits)
-	// create a new accounting_unit
-	r.POST("/accounting_units", controllers.CreateAccountingUnit)
-	// update a accounting_unit
-	r.PUT("/accounting_units/:id", controllers.UpdateAccountingUnit)
+	// accountingGroup Group
+	accountingGroup := r.Group("v1/accounting_units")
+	{
+		// get all accounting_units
+		accountingGroup.GET("/", controllers.GetAccountingUnits)
+		// get a accounting_unit by id
+		accountingGroup.GET("/:id", controllers.GetAccountingUnit)
+		// create a new accounting_unit
+		accountingGroup.POST("/", controllers.CreateAccountingUnit)
+		// update a accounting_unit
+		accountingGroup.PUT("/:id", controllers.UpdateAccountingUnit)
+		// unpaginated list of accounting_units
+		accountingGroup.GET("/all", controllers.GetUnpaginatedAccountingUnits)
+	}
 
-	// get all entities
-	r.GET("/entities", controllers.GetEntities)
-	// create a new entity
-	r.POST("/entities", controllers.CreateEntity)
-	// update a entity
-	r.PUT("/entities/:id", controllers.UpdateEntity)
+	// Entity Group
+	entityGroup := r.Group("v1/entities")
+	{
+		// get all entities
+		entityGroup.GET("/", controllers.GetEntities)
+		// get a entity by id
+		entityGroup.GET("/:id", controllers.GetEntity)
+		// create a new entity
+		entityGroup.POST("/", controllers.CreateEntity)
+		// update a entity
+		entityGroup.PUT("/:id", controllers.UpdateEntity)
+	}
 	r.Run()
 }

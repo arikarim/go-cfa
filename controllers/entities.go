@@ -1,9 +1,11 @@
 package controllers
 
 import (
-	"github.com/arikarim/go-cfa/models"
-	"github.com/gin-gonic/gin"
 	"net/http"
+
+	"github.com/arikarim/go-cfa/models"
+	"github.com/arikarim/go-cfa/serializers"
+	"github.com/gin-gonic/gin"
 )
 
 // get all entities
@@ -16,8 +18,34 @@ func GetEntities(c *gin.Context) {
 		return
 	}
 
+	serializer := serializers.EntitiesSerializer{
+		C: c,
+		Entities: entities,
+	}
+
 	// return success
-	c.JSON(200, entities)
+	c.JSON(200, serializer.Response())
+}
+
+// get an entity by id
+func GetEntity(c *gin.Context) {
+	var entity = models.Entity{}
+	// find entity by id
+	// preload all accounting_units
+	if err := models.DB.Preload("AccountingUnits").Where("id = ?", c.Param("id")).First(&entity).Error; err != nil {
+		c.JSON(422, gin.H{
+			"message": err.Error(),
+		})
+		return
+	}
+
+	// Initialize serializer
+	serializer := serializers.EntitySerializer{
+		C: c, 
+		Entity: entity,
+	}
+	// return success
+	c.JSON(200, serializer.Response())
 }
 
 // create a new entity
@@ -51,11 +79,13 @@ func CreateEntity(c *gin.Context) {
 	// commit transaction
 	tx.Commit()
 
+	// Initialize serializer
+	serializer := serializers.EntitySerializer{
+		C: c, 
+		Entity: entity,
+	}
 	// return success
-	c.JSON(200, gin.H{
-		"message": "success",
-		"data":    entity,
-	})
+	c.JSON(200, serializer.Response())
 }
 
 // update a entity
@@ -86,9 +116,11 @@ func UpdateEntity(c *gin.Context) {
 		Status: input.Status,
 	})
 
+	// Initialize serializer
+	serializer := serializers.EntitySerializer{
+		C: c, 
+		Entity: entity,
+	}
 	// return success
-	c.JSON(200, gin.H{
-		"message": "success",
-		"data":    entity,
-	})
+	c.JSON(200, serializer.Response())
 }

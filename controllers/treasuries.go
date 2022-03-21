@@ -2,9 +2,11 @@ package controllers
 
 import (
 	"fmt"
-	"github.com/arikarim/go-cfa/models"
-	"github.com/gin-gonic/gin"
 	"net/http"
+
+	"github.com/arikarim/go-cfa/models"
+	"github.com/arikarim/go-cfa/serializers"
+	"github.com/gin-gonic/gin"
 )
 
 // get all treasuries
@@ -17,7 +19,33 @@ func GetTreasuries(c *gin.Context) {
 		return
 	}
 
-	c.JSON(200, treasuries)
+	// Initialize serializer
+	serializer := serializers.TreasuriesSerializer{
+		C: c,
+		Treasuries: treasuries,
+	}
+
+	c.JSON(200, serializer.Response())
+}
+
+// get an treasury by id
+func GetTreasury(c *gin.Context) {
+	var treasury = models.Treasury{}
+	// find treasury by id
+	if err := models.DB.Preload("AccountingUnits").Where("id = ?", c.Param("id")).First(&treasury).Error; err != nil {
+		c.JSON(422, gin.H{
+			"message": err.Error(),
+		})
+		return
+	}
+
+	// Initialize serializer
+	serializer := serializers.TreasurySerializer{
+		C: c,
+		Treasury: treasury,
+	}
+	// return success
+	c.JSON(200, serializer.Response())
 }
 
 // create a new treasury
@@ -39,10 +67,13 @@ func CreateTreasury(c *gin.Context) {
 
 	models.DB.Create(&treasury)
 
-	c.JSON(200, gin.H{
-		"message": "success",
-		"data":    treasury,
-	})
+	// Initialize serializer
+	serializer := serializers.TreasurySerializer{
+		C: c,
+		Treasury: treasury,
+	}
+	// return success
+	c.JSON(http.StatusCreated, serializer.Response())
 }
 
 // UpdateTreasury
@@ -70,8 +101,11 @@ func UpdateTreasury(c *gin.Context) {
 		Status: input.Status,
 	})
 
-	c.JSON(http.StatusOK, gin.H{
-		"message": "success",
-		"data":    treasury,
-	})
+	// Initialize serializer
+	serializer := serializers.TreasurySerializer{
+		C: c,
+		Treasury: treasury,
+	}
+	// return success
+	c.JSON(http.StatusOK, serializer.Response())
 }

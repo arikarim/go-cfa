@@ -1,10 +1,15 @@
 package models
 
+import (
+	"github.com/jinzhu/gorm"
+)
+
 // entity struct
 type Entity struct {
-	Id     uint `json:"id" gorm:"primary_key"`
 	NameEn string `json:"name_en" binding:"required"`
 	Status string `json:"status" binding:"required" gorm:"default:'active'"`
+	gorm.Model
+	AccountingUnits []AccountingUnit
 }
 
 // create entity input struct
